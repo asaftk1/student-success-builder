@@ -1,10 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Users, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { UserCheck, UserX, LogOut } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 interface Profile {
@@ -14,64 +14,73 @@ interface Profile {
   role: 'admin' | 'coordinator' | 'teacher';
   is_approved: boolean;
   created_at: string;
+  updated_at: string;
 }
 
 const AdminPanel = () => {
-  const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { signOut } = useAuth();
   const { toast } = useToast();
+  const [users, setUsers] = useState<Profile[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchProfiles();
+    fetchUsers();
+
+    const subscription = supabase
+      .channel('profiles')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'profiles' },
+        (payload) => {
+          console.log('Change received!', payload)
+          fetchUsers();
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(subscription)
+    }
   }, []);
 
-  const fetchProfiles = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+  const fetchUsers = async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setProfiles(data || []);
-    } catch (error) {
+    if (error) {
+      console.error('Error fetching users:', error);
       toast({
+        variant: "destructive",
         title: "שגיאה",
-        description: "לא ניתן לטעון את רשימת המשתמשים",
-        variant: "destructive"
+        description: "לא ניתן היה לטעון את רשימת המשתמשים"
       });
-    } finally {
-      setLoading(false);
+    } else {
+      setUsers(data.map(user => ({ ...user, role: user.role as 'admin' | 'coordinator' | 'teacher' })));
     }
+    setLoading(false);
   };
 
-  const updateApproval = async (userId: string, isApproved: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ is_approved: isApproved })
-        .eq('id', userId);
+  const updateUserApproval = async (userId: string, isApproved: boolean) => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ is_approved: isApproved })
+      .eq('id', userId);
 
-      if (error) throw error;
-
-      setProfiles(profiles.map(profile => 
-        profile.id === userId 
-          ? { ...profile, is_approved: isApproved }
-          : profile
-      ));
-
+    if (error) {
+      console.error('Error updating user:', error);
       toast({
-        title: isApproved ? "משתמש אושר" : "אישור בוטל",
-        description: isApproved 
-          ? "המשתמש יכול כעת לגשת למערכת" 
-          : "גישת המשתמש למערכת בוטלה"
-      });
-    } catch (error) {
-      toast({
+        variant: "destructive",
         title: "שגיאה",
-        description: "לא ניתן לעדכן את סטטוס המשתמש",
-        variant: "destructive"
+        description: "לא ניתן היה לעדכן את סטטוס המשתמש"
       });
+    } else {
+      toast({
+        title: "עודכן בהצלחה",
+        description: `המשתמש ${isApproved ? 'אושר' : 'נדחה'} בהצלחה`
+      });
+      fetchUsers();
     }
   };
 
@@ -84,132 +93,95 @@ const AdminPanel = () => {
     }
   };
 
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'admin': return 'bg-red-100 text-red-800';
-      case 'coordinator': return 'bg-blue-100 text-blue-800';
-      case 'teacher': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">טוען נתונים...</p>
+          <p className="mt-4 text-gray-600">טוען...</p>
         </div>
       </div>
     );
   }
 
-  const pendingUsers = profiles.filter(p => !p.is_approved);
-  const approvedUsers = profiles.filter(p => p.is_approved);
-
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center space-x-4">
-        <Users className="w-8 h-8 text-blue-600" />
-        <h1 className="text-2xl font-bold text-gray-900">ניהול משתמשים</h1>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">פאנל ניהול</h1>
+            <p className="text-gray-600 mt-2">ניהול משתמשים ואישורים</p>
+          </div>
+          <Button onClick={signOut} variant="outline">
+            <LogOut className="w-4 h-4 mr-2" />
+            התנתק
+          </Button>
+        </div>
 
-      {/* Pending Approvals */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Clock className="w-5 h-5 text-yellow-600" />
-            <span>ממתינים לאישור ({pendingUsers.length})</span>
-          </CardTitle>
-          <CardDescription>
-            משתמשים שנרשמו למערכת וממתינים לאישור שלך
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {pendingUsers.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">אין משתמשים הממתינים לאישור</p>
-          ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              רשימת משתמשים
+              <Badge variant="secondary">{users.length}</Badge>
+            </CardTitle>
+            <CardDescription>
+              כאן תוכל לאשר או לדחות משתמשים חדשים במערכת
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             <div className="space-y-4">
-              {pendingUsers.map((profile) => (
-                <div key={profile.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-yellow-50">
+              {users.map((user) => (
+                <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex-1">
-                    <div className="flex items-center space-x-3">
-                      <h3 className="font-medium text-gray-900">{profile.full_name || 'ללא שם'}</h3>
-                      <Badge className={getRoleBadgeColor(profile.role)}>
-                        {getRoleLabel(profile.role)}
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <p className="font-medium">{user.full_name || 'ללא שם'}</p>
+                        <p className="text-sm text-gray-600">{user.email}</p>
+                      </div>
+                      <Badge variant={user.role === 'admin' ? 'default' : 'outline'}>
+                        {getRoleLabel(user.role)}
+                      </Badge>
+                      <Badge variant={user.is_approved ? 'default' : 'destructive'}>
+                        {user.is_approved ? 'מאושר' : 'ממתין לאישור'}
                       </Badge>
                     </div>
-                    <p className="text-sm text-gray-600">{profile.email}</p>
-                    <p className="text-xs text-gray-500">
-                      נרשם: {new Date(profile.created_at).toLocaleDateString('he-IL')}
+                    <p className="text-xs text-gray-500 mt-1">
+                      נרשם: {new Date(user.created_at).toLocaleDateString('he-IL')}
                     </p>
                   </div>
-                  <div className="flex space-x-2">
-                    <Button
-                      size="sm"
-                      onClick={() => updateApproval(profile.id, true)}
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      <CheckCircle className="w-4 h-4 mr-1" />
-                      אשר
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => updateApproval(profile.id, false)}
-                    >
-                      <XCircle className="w-4 h-4 mr-1" />
-                      דחה
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Approved Users */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <CheckCircle className="w-5 h-5 text-green-600" />
-            <span>משתמשים מאושרים ({approvedUsers.length})</span>
-          </CardTitle>
-          <CardDescription>
-            משתמשים שיכולים לגשת למערכת
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {approvedUsers.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">אין משתמשים מאושרים</p>
-          ) : (
-            <div className="space-y-4">
-              {approvedUsers.map((profile) => (
-                <div key={profile.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3">
-                      <h3 className="font-medium text-gray-900">{profile.full_name || 'ללא שם'}</h3>
-                      <Badge className={getRoleBadgeColor(profile.role)}>
-                        {getRoleLabel(profile.role)}
-                      </Badge>
-                      <Badge className="bg-green-100 text-green-800">מאושר</Badge>
+                  
+                  {!user.is_approved && (
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        onClick={() => updateUserApproval(user.id, true)}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        <UserCheck className="w-4 h-4 mr-1" />
+                        אשר
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="destructive"
+                        onClick={() => updateUserApproval(user.id, false)}
+                      >
+                        <UserX className="w-4 h-4 mr-1" />
+                        דחה
+                      </Button>
                     </div>
-                    <p className="text-sm text-gray-600">{profile.email}</p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => updateApproval(profile.id, false)}
-                  >
-                    בטל אישור
-                  </Button>
+                  )}
                 </div>
               ))}
+              
+              {users.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  אין משתמשים רשומים במערכת כרגע
+                </div>
+              )}
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

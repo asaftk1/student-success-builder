@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -55,7 +54,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               .select('*')
               .eq('id', session.user.id)
               .single();
-            setProfile(profileData);
+            if (profileData) {
+              setProfile(profileData as Profile);
+            }
           }, 0);
         } else {
           setProfile(null);
@@ -75,7 +76,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .eq('id', session.user.id)
           .single()
           .then(({ data: profileData }) => {
-            setProfile(profileData);
+            if (profileData) {
+              setProfile(profileData as Profile);
+            }
             setLoading(false);
           });
       } else {
