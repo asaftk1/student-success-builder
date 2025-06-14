@@ -8,24 +8,32 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Edit, Trash2, User } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, User, Users, Anchor } from 'lucide-react';
 
 const StudentManagement = () => {
   const [students, setStudents] = useState([
-    { id: 1, name: 'יוסף כהן', class: 'י1', average: 4.2, attendance: 85, subjects: ['מתמטיקה', 'עברית', 'אנגלית'] },
-    { id: 2, name: 'דוד לוי', class: 'י1', average: 3.8, attendance: 92, subjects: ['מתמטיקה', 'היסטוריה', 'ספרות'] },
-    { id: 3, name: 'משה ישראל', class: 'י2', average: 4.5, attendance: 88, subjects: ['פיזיקה', 'כימיה', 'מתמטיקה'] },
+    { id: 1, name: 'יוסף כהן', group: 'נחשול', average: 4.2, attendance: 85, subjects: ['מתמטיקה', 'עברית', 'אנגלית'] },
+    { id: 2, name: 'דוד לוי', group: 'אלמוג', average: 3.8, attendance: 92, subjects: ['מתמטיקה', 'היסטוריה', 'ספרות'] },
+    { id: 3, name: 'משה ישראל', group: 'מגדלור', average: 4.5, attendance: 88, subjects: ['פיזיקה', 'כימיה', 'מתמטיקה'] },
+    { id: 4, name: 'אברהם מלכה', group: 'עוגן', average: 4.0, attendance: 90, subjects: ['אנגלית', 'מתמטיקה', 'היסטוריה'] },
   ]);
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [newStudent, setNewStudent] = useState({ name: '', class: '', subjects: [] });
+  const [newStudent, setNewStudent] = useState({ name: '', group: '', subjects: [] });
+
+  const groups = ['נחשול', 'אלמוג', 'מגדלור', 'עוגן'];
+  const subjects = [
+    'מתמטיקה', 'עברית', 'אנגלית', 'היסטוריה', 'ספרות', 
+    'פיזיקה', 'כימיה', 'ביולוגיה', 'גיאוגרפיה', 'אזרחות',
+    'ספורט', 'אמנות', 'מוזיקה', 'טכנולוגיה', 'מדעי הים'
+  ];
 
   const filteredStudents = students.filter(student =>
-    student.name.includes(searchTerm) || student.class.includes(searchTerm)
+    student.name.includes(searchTerm) || student.group.includes(searchTerm)
   );
 
   const handleAddStudent = () => {
-    if (newStudent.name && newStudent.class) {
+    if (newStudent.name && newStudent.group) {
       setStudents([...students, { 
         id: students.length + 1, 
         ...newStudent, 
@@ -33,14 +41,37 @@ const StudentManagement = () => {
         attendance: 0,
         subjects: []
       }]);
-      setNewStudent({ name: '', class: '', subjects: [] });
+      setNewStudent({ name: '', group: '', subjects: [] });
+    }
+  };
+
+  const getGroupIcon = (group: string) => {
+    switch (group) {
+      case 'נחשול': return '🌊';
+      case 'אלמוג': return '🪸';
+      case 'מגדלור': return '🗼';
+      case 'עוגן': return '⚓';
+      default: return '⭐';
+    }
+  };
+
+  const getGroupColor = (group: string) => {
+    switch (group) {
+      case 'נחשול': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'אלמוג': return 'bg-red-100 text-red-800 border-red-200';
+      case 'מגדלור': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'עוגן': return 'bg-green-100 text-green-800 border-green-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">ניהול תלמידים</h2>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">ניהול תלמידים - מצפה ים</h2>
+          <p className="text-gray-600 mt-1">ניהול תלמידים לפי קבוצות ימיות ומקצועות לימוד</p>
+        </div>
         <Dialog>
           <DialogTrigger asChild>
             <Button className="bg-blue-600 hover:bg-blue-700">
@@ -51,7 +82,7 @@ const StudentManagement = () => {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>הוסף תלמיד חדש</DialogTitle>
-              <DialogDescription>הכנס פרטי התלמיד החדש</DialogDescription>
+              <DialogDescription>הכנס פרטי התלמיד החדש וקבוצתו הימית</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
@@ -64,18 +95,20 @@ const StudentManagement = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="class">כיתה</Label>
-                <Select value={newStudent.class} onValueChange={(value) => setNewStudent({...newStudent, class: value})}>
+                <Label htmlFor="group">קבוצה ימית</Label>
+                <Select value={newStudent.group} onValueChange={(value) => setNewStudent({...newStudent, group: value})}>
                   <SelectTrigger>
-                    <SelectValue placeholder="בחר כיתה" />
+                    <SelectValue placeholder="בחר קבוצה ימית" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="י1">י1</SelectItem>
-                    <SelectItem value="י2">י2</SelectItem>
-                    <SelectItem value="יא1">יא1</SelectItem>
-                    <SelectItem value="יא2">יא2</SelectItem>
-                    <SelectItem value="יב1">יב1</SelectItem>
-                    <SelectItem value="יב2">יב2</SelectItem>
+                    {groups.map((group) => (
+                      <SelectItem key={group} value={group}>
+                        <span className="flex items-center gap-2">
+                          <span>{getGroupIcon(group)}</span>
+                          <span>{group}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -90,7 +123,7 @@ const StudentManagement = () => {
           <div className="flex items-center space-x-4">
             <Search className="w-5 h-5 text-gray-400" />
             <Input
-              placeholder="חפש תלמיד או כיתה..."
+              placeholder="חפש תלמיד או קבוצה ימית..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="max-w-sm"
@@ -102,7 +135,7 @@ const StudentManagement = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>שם התלמיד</TableHead>
-                <TableHead>כיתה</TableHead>
+                <TableHead>קבוצה ימית</TableHead>
                 <TableHead>ציון ממוצע</TableHead>
                 <TableHead>אחוז נוכחות</TableHead>
                 <TableHead>מקצועות</TableHead>
@@ -119,7 +152,10 @@ const StudentManagement = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">{student.class}</Badge>
+                    <Badge variant="outline" className={`${getGroupColor(student.group)} font-medium`}>
+                      <span className="mr-1">{getGroupIcon(student.group)}</span>
+                      {student.group}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <Badge variant={student.average >= 4 ? 'default' : student.average >= 3 ? 'secondary' : 'destructive'}>
@@ -157,10 +193,13 @@ const StudentManagement = () => {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">סטטיסטיקות כלליות</CardTitle>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              סטטיסטיקות כלליות
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -201,19 +240,49 @@ const StudentManagement = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">התפלגות כיתות</CardTitle>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Anchor className="w-5 h-5" />
+              התפלגות קבוצות ימיות
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {groups.map(group => {
+                const count = students.filter(s => s.group === group).length;
+                return (
+                  <div key={group} className="flex justify-between items-center">
+                    <span className="flex items-center gap-1">
+                      <span>{getGroupIcon(group)}</span>
+                      <span>{group}:</span>
+                    </span>
+                    <span className="font-bold">{count} תלמידים</span>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">מקצועות פופולריים</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               {Object.entries(
                 students.reduce((acc, student) => {
-                  acc[student.class] = (acc[student.class] || 0) + 1;
+                  student.subjects.forEach(subject => {
+                    acc[subject] = (acc[subject] || 0) + 1;
+                  });
                   return acc;
                 }, {} as Record<string, number>)
-              ).map(([className, count]) => (
-                <div key={className} className="flex justify-between">
-                  <span>כיתה {className}:</span>
-                  <span className="font-bold">{count} תלמידים</span>
+              )
+              .sort(([,a], [,b]) => b - a)
+              .slice(0, 5)
+              .map(([subject, count]) => (
+                <div key={subject} className="flex justify-between">
+                  <span className="text-sm">{subject}:</span>
+                  <span className="font-bold">{count}</span>
                 </div>
               ))}
             </div>
