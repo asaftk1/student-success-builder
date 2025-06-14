@@ -44,7 +44,7 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="הכנס אימייל"
+                placeholder="אימייל"
                 required
               />
             </div>
@@ -55,7 +55,7 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="הכנס סיסמה"
+                placeholder="סיסמה"
                 required
               />
             </div>
@@ -63,7 +63,7 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
               <Label htmlFor="role">תפקיד</Label>
               <Select value={role} onValueChange={setRole} required>
                 <SelectTrigger>
-                  <SelectValue placeholder="בחר תפקיד" />
+                  <SelectValue placeholder="תפקיד" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="admin">מנהל</SelectItem>

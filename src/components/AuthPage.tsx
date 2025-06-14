@@ -100,7 +100,7 @@ const AuthPage = () => {
                     type="email"
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
-                    placeholder="הכנס אימייל"
+                    placeholder=" אימייל"
                     required
                   />
                 </div>
@@ -111,7 +111,7 @@ const AuthPage = () => {
                     type="password"
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
-                    placeholder="הכנס סיסמה"
+                    placeholder=" סיסמה"
                     required
                   />
                 </div>
@@ -130,7 +130,7 @@ const AuthPage = () => {
                     type="text"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder="הכנס שם מלא"
+                    placeholder=" שם מלא"
                     required
                   />
                 </div>
@@ -141,7 +141,7 @@ const AuthPage = () => {
                     type="email"
                     value={signupEmail}
                     onChange={(e) => setSignupEmail(e.target.value)}
-                    placeholder="הכנס אימייל"
+                    placeholder=" אימייל"
                     required
                   />
                 </div>
@@ -152,7 +152,7 @@ const AuthPage = () => {
                     type="password"
                     value={signupPassword}
                     onChange={(e) => setSignupPassword(e.target.value)}
-                    placeholder="הכנס סיסמה (לפחות 6 תווים)"
+                    placeholder=" סיסמה (לפחות 6 תווים)"
                     required
                     minLength={6}
                   />
@@ -161,7 +161,7 @@ const AuthPage = () => {
                   <Label htmlFor="signup-role">תפקיד</Label>
                   <Select value={role} onValueChange={setRole} required>
                     <SelectTrigger>
-                      <SelectValue placeholder="בחר תפקיד" />
+                      <SelectValue placeholder=" תפקיד" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="teacher">מורה</SelectItem>
