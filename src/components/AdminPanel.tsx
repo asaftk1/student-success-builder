@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -65,7 +66,13 @@ const AdminPanel = () => {
         description: "לא ניתן היה לטעון את רשימת המשתמשים"
       });
     } else {
-      setUsers(data.map(user => ({ ...user, role: user.role as 'admin' | 'coordinator' | 'teacher' })));
+      console.log('Raw data from database:', data);
+      const mappedUsers = data.map(user => {
+        console.log(`User ${user.email} has role: "${user.role}" (type: ${typeof user.role})`);
+        return { ...user, role: user.role as 'admin' | 'coordinator' | 'teacher' };
+      });
+      console.log('Mapped users:', mappedUsers);
+      setUsers(mappedUsers);
     }
     setLoading(false);
   };
@@ -119,48 +126,52 @@ const AdminPanel = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {users.map((user) => (
-                  <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <div>
-                          <p className="font-medium">{user.full_name || 'ללא שם'}</p>
-                          <p className="text-sm text-gray-600">{user.email}</p>
+                {users.map((user) => {
+                  console.log(`Rendering user ${user.email} with role: "${user.role}"`);
+                  console.log(`getRoleLabel("${user.role}") = "${getRoleLabel(user.role)}"`);
+                  return (
+                    <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3">
+                          <div>
+                            <p className="font-medium">{user.full_name || 'ללא שם'}</p>
+                            <p className="text-sm text-gray-600">{user.email}</p>
+                          </div>
+                          <Badge variant={user.role === 'admin' ? 'default' : 'outline'}>
+                            {getRoleLabel(user.role)}
+                          </Badge>
+                          <Badge variant={user.is_approved ? 'default' : 'destructive'}>
+                            {user.is_approved ? 'מאושר' : 'ממתין לאישור'}
+                          </Badge>
                         </div>
-                        <Badge variant={user.role === 'admin' ? 'default' : 'outline'}>
-                          {getRoleLabel(user.role)}
-                        </Badge>
-                        <Badge variant={user.is_approved ? 'default' : 'destructive'}>
-                          {user.is_approved ? 'מאושר' : 'ממתין לאישור'}
-                        </Badge>
+                        <p className="text-xs text-gray-500 mt-1">
+                          נרשם: {new Date(user.created_at).toLocaleDateString('he-IL')}
+                        </p>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        נרשם: {new Date(user.created_at).toLocaleDateString('he-IL')}
-                      </p>
+                      
+                      {!user.is_approved && (
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            onClick={() => updateUserApproval(user.id, true)}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            <UserCheck className="w-4 h-4 mr-1" />
+                            אשר
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="destructive"
+                            onClick={() => updateUserApproval(user.id, false)}
+                          >
+                            <UserX className="w-4 h-4 mr-1" />
+                            דחה
+                          </Button>
+                        </div>
+                      )}
                     </div>
-                    
-                    {!user.is_approved && (
-                      <div className="flex gap-2">
-                        <Button 
-                          size="sm" 
-                          onClick={() => updateUserApproval(user.id, true)}
-                          className="bg-green-600 hover:bg-green-700"
-                        >
-                          <UserCheck className="w-4 h-4 mr-1" />
-                          אשר
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="destructive"
-                          onClick={() => updateUserApproval(user.id, false)}
-                        >
-                          <UserX className="w-4 h-4 mr-1" />
-                          דחה
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
                 
                 {users.length === 0 && (
                   <div className="text-center py-8 text-gray-500">
