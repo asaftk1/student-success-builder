@@ -4,7 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { UserCheck, UserX, LogOut, Users, Calendar, BookOpen, BarChart3, MessageSquare, Settings } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { UserCheck, UserX, LogOut, Users, Calendar, BookOpen, BarChart3, MessageSquare, Settings, Edit } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -31,6 +33,9 @@ const AdminPanel = () => {
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('users');
+  const [editingUser, setEditingUser] = useState<Profile | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<'admin' | 'coordinator' | 'teacher'>('teacher');
 
   useEffect(() => {
     fetchUsers();
@@ -99,6 +104,38 @@ const AdminPanel = () => {
     }
   };
 
+  const updateUserRole = async () => {
+    if (!editingUser) return;
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ role: selectedRole })
+      .eq('id', editingUser.id);
+
+    if (error) {
+      console.error('Error updating user role:', error);
+      toast({
+        variant: "destructive",
+        title: "שגיאה",
+        description: "לא ניתן היה לעדכן את תפקיד המשתמש"
+      });
+    } else {
+      toast({
+        title: "עודכן בהצלחה",
+        description: `תפקיד המשתמש עודכן ל${getRoleLabel(selectedRole)}`
+      });
+      setIsEditDialogOpen(false);
+      setEditingUser(null);
+      fetchUsers();
+    }
+  };
+
+  const openEditDialog = (user: Profile) => {
+    setEditingUser(user);
+    setSelectedRole(user.role);
+    setIsEditDialogOpen(true);
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'students':
@@ -121,7 +158,7 @@ const AdminPanel = () => {
                 <Badge variant="secondary">{users.length}</Badge>
               </CardTitle>
               <CardDescription>
-                כאן תוכל לאשר או לדחות משתמשים חדשים במערכת
+                כאן תוכל לאשר או לדחות משתמשים חדשים במערכת ולעדכן תפקידים
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -149,26 +186,37 @@ const AdminPanel = () => {
                         </p>
                       </div>
                       
-                      {!user.is_approved && (
-                        <div className="flex gap-2">
-                          <Button 
-                            size="sm" 
-                            onClick={() => updateUserApproval(user.id, true)}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            <UserCheck className="w-4 h-4 mr-1" />
-                            אשר
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="destructive"
-                            onClick={() => updateUserApproval(user.id, false)}
-                          >
-                            <UserX className="w-4 h-4 mr-1" />
-                            דחה
-                          </Button>
-                        </div>
-                      )}
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => openEditDialog(user)}
+                        >
+                          <Edit className="w-4 h-4 mr-1" />
+                          עריכה
+                        </Button>
+                        
+                        {!user.is_approved && (
+                          <>
+                            <Button 
+                              size="sm" 
+                              onClick={() => updateUserApproval(user.id, true)}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <UserCheck className="w-4 h-4 mr-1" />
+                              אשר
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="destructive"
+                              onClick={() => updateUserApproval(user.id, false)}
+                            >
+                              <UserX className="w-4 h-4 mr-1" />
+                              דחה
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -262,6 +310,41 @@ const AdminPanel = () => {
             {renderTabContent()}
           </TabsContent>
         </Tabs>
+
+        {/* Role Edit Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>עריכת תפקיד משתמש</DialogTitle>
+              <DialogDescription>
+                עדכן את התפקיד של {editingUser?.full_name || editingUser?.email}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="py-4">
+              <label className="text-sm font-medium mb-2 block">תפקיד:</label>
+              <Select value={selectedRole} onValueChange={(value: 'admin' | 'coordinator' | 'teacher') => setSelectedRole(value)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="בחר תפקיד" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">מנהל</SelectItem>
+                  <SelectItem value="coordinator">רכז פדגוגי</SelectItem>
+                  <SelectItem value="teacher">מורה</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                ביטול
+              </Button>
+              <Button onClick={updateUserRole}>
+                שמור שינויים
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
