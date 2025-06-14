@@ -8,6 +8,8 @@ import AdminPanel from '@/components/AdminPanel';
 const Index = () => {
   const { user, profile, loading, isApproved } = useAuth();
 
+  console.log('Current user state:', { user: !!user, profile, isApproved });
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -31,6 +33,7 @@ const Index = () => {
 
   // Admin user - show admin panel
   if (profile.role === 'admin') {
+    console.log('Showing admin panel for admin user');
     return <AdminPanel />;
   }
 
