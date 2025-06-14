@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { UserCheck, UserX, LogOut, Users, Calendar, BookOpen, BarChart3, Message
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { getRoleLabel } from '@/utils/roleUtils';
 import StudentManagement from './StudentManagement';
 import AttendanceSystem from './AttendanceSystem';
 import ScheduleManager from './ScheduleManager';
@@ -89,15 +89,6 @@ const AdminPanel = () => {
         description: `המשתמש ${isApproved ? 'אושר' : 'נדחה'} בהצלחה`
       });
       fetchUsers();
-    }
-  };
-
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case 'admin': return 'מנהל';
-      case 'coordinator': return 'רכז פדגוגי';
-      case 'teacher': return 'מורה';
-      default: return role;
     }
   };
 

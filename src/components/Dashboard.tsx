@@ -1,9 +1,9 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Users, Calendar, BookOpen, BarChart3, MessageSquare, Settings, LogOut, Bell } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { getRoleLabel } from '@/utils/roleUtils';
 import StudentManagement from './StudentManagement';
 import AttendanceSystem from './AttendanceSystem';
 import ScheduleManager from './ScheduleManager';
@@ -49,15 +49,6 @@ const Dashboard = ({ user }: DashboardProps) => {
     }
   };
 
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case 'admin': return 'מנהל';
-      case 'coordinator': return 'רכז פדגוגי';
-      case 'teacher': return 'מורה';
-      default: return role;
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
@@ -93,15 +84,6 @@ const Dashboard = ({ user }: DashboardProps) => {
       </div>
     </div>
   );
-};
-
-const getRoleLabel = (role: string) => {
-  switch (role) {
-    case 'admin': return 'מנהל';
-    case 'coordinator': return 'רכז פדגוגי';
-    case 'teacher': return 'מורה';
-    default: return role;
-  }
 };
 
 const DashboardOverview = ({ userRole }: { userRole: string }) => {
