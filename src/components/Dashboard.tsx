@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Users, Calendar, BookOpen, BarChart3, MessageSquare, Settings, LogOut, Bell } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import StudentManagement from './StudentManagement';
 import AttendanceSystem from './AttendanceSystem';
 import ScheduleManager from './ScheduleManager';
@@ -14,7 +15,8 @@ interface DashboardProps {
   onLogout: () => void;
 }
 
-const Dashboard = ({ user, onLogout }: DashboardProps) => {
+const Dashboard = ({ user }: DashboardProps) => {
+  const { signOut } = useAuth();
   const [activeSection, setActiveSection] = useState('overview');
 
   const menuItems = [
@@ -47,13 +49,22 @@ const Dashboard = ({ user, onLogout }: DashboardProps) => {
     }
   };
 
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case 'admin': return 'מנהל';
+      case 'coordinator': return 'רכז פדגוגי';
+      case 'teacher': return 'מורה';
+      default: return role;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
       <div className="w-64 bg-white shadow-lg flex flex-col">
         <div className="p-6 border-b">
           <h1 className="text-xl font-bold text-gray-900">מערכת בית ספר</h1>
-          <p className="text-sm text-gray-600">{user.name} - {getRoleLabel(user.role)}</p>
+          <p className="text-sm text-gray-600">{user.full_name || user.email} - {getRoleLabel(user.role)}</p>
         </div>
         <nav className="flex-1 p-4 space-y-2">
           {visibleMenuItems.map((item) => (
@@ -69,7 +80,7 @@ const Dashboard = ({ user, onLogout }: DashboardProps) => {
           ))}
         </nav>
         <div className="p-4 border-t">
-          <Button variant="outline" className="w-full" onClick={onLogout}>
+          <Button variant="outline" className="w-full" onClick={signOut}>
             <LogOut className="w-4 h-4 mr-2" />
             התנתק
           </Button>
