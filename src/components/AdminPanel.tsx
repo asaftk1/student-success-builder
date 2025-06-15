@@ -17,12 +17,19 @@ import ScheduleManager from './ScheduleManager';
 import GradingSystem from './GradingSystem';
 import ExamCalendar from './ExamCalendar';
 
+interface Group {
+  id: string;
+  name: string;
+  description?: string;
+}
+
 interface Profile {
   id: string;
   email: string;
   full_name?: string;
-  role: 'admin' | 'coordinator' | 'teacher';
+  role: 'admin' | 'coordinator' | 'teacher' | 'instructor' | 'group_coordinator';
   is_approved: boolean;
+  group_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -31,14 +38,17 @@ const AdminPanel = () => {
   const { signOut } = useAuth();
   const { toast } = useToast();
   const [users, setUsers] = useState<Profile[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('users');
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<'admin' | 'coordinator' | 'teacher'>('teacher');
+  const [selectedRole, setSelectedRole] = useState<'admin' | 'coordinator' | 'teacher' | 'instructor' | 'group_coordinator'>('teacher');
+  const [selectedGroupId, setSelectedGroupId] = useState<string>('');
 
   useEffect(() => {
     fetchUsers();
+    fetchGroups();
 
     const subscription = supabase
       .channel('profiles')
@@ -60,7 +70,14 @@ const AdminPanel = () => {
   const fetchUsers = async () => {
     const { data, error } = await supabase
       .from('profiles')
-      .select('*')
+      .select(`
+        *,
+        groups (
+          id,
+          name,
+          description
+        )
+      `)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -74,12 +91,25 @@ const AdminPanel = () => {
       console.log('Raw data from database:', data);
       const mappedUsers = data.map(user => {
         console.log(`User ${user.email} has role: "${user.role}" (type: ${typeof user.role})`);
-        return { ...user, role: user.role as 'admin' | 'coordinator' | 'teacher' };
+        return { ...user, role: user.role as 'admin' | 'coordinator' | 'teacher' | 'instructor' | 'group_coordinator' };
       });
       console.log('Mapped users:', mappedUsers);
       setUsers(mappedUsers);
     }
     setLoading(false);
+  };
+
+  const fetchGroups = async () => {
+    const { data, error } = await supabase
+      .from('groups')
+      .select('*')
+      .order('name');
+
+    if (error) {
+      console.error('Error fetching groups:', error);
+    } else {
+      setGroups(data || []);
+    }
   };
 
   const updateUserApproval = async (userId: string, isApproved: boolean) => {
@@ -107,9 +137,19 @@ const AdminPanel = () => {
   const updateUserRole = async () => {
     if (!editingUser) return;
 
+    const updateData: any = { role: selectedRole };
+    
+    // אם התפקיד דורש קבוצה ספציפית, נוסיף את ה-group_id
+    if ((selectedRole === 'instructor' || selectedRole === 'group_coordinator') && selectedGroupId) {
+      updateData.group_id = selectedGroupId;
+    } else if (selectedRole === 'admin' || selectedRole === 'coordinator' || selectedRole === 'teacher') {
+      // תפקידים שלא צריכים קבוצה ספציפית
+      updateData.group_id = null;
+    }
+
     const { error } = await supabase
       .from('profiles')
-      .update({ role: selectedRole })
+      .update(updateData)
       .eq('id', editingUser.id);
 
     if (error) {
@@ -126,6 +166,7 @@ const AdminPanel = () => {
       });
       setIsEditDialogOpen(false);
       setEditingUser(null);
+      setSelectedGroupId('');
       fetchUsers();
     }
   };
@@ -133,8 +174,11 @@ const AdminPanel = () => {
   const openEditDialog = (user: Profile) => {
     setEditingUser(user);
     setSelectedRole(user.role);
+    setSelectedGroupId(user.group_id || '');
     setIsEditDialogOpen(true);
   };
+
+  const needsGroupSelection = selectedRole === 'instructor' || selectedRole === 'group_coordinator';
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -158,7 +202,7 @@ const AdminPanel = () => {
                 <Badge variant="secondary">{users.length}</Badge>
               </CardTitle>
               <CardDescription>
-                כאן תוכל לאשר או לדחות משתמשים חדשים במערכת ולעדכן תפקידים
+                כאן תוכל לאשר או לדחות משתמשים חדשים במערכת ולעדכן תפקידים וקבוצות
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -166,6 +210,7 @@ const AdminPanel = () => {
                 {users.map((user) => {
                   console.log(`Rendering user ${user.email} with role: "${user.role}"`);
                   console.log(`getRoleLabel("${user.role}") = "${getRoleLabel(user.role)}"`);
+                  const userGroup = groups.find(g => g.id === user.group_id);
                   return (
                     <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex-1">
@@ -177,6 +222,11 @@ const AdminPanel = () => {
                           <Badge variant={user.role === 'admin' ? 'default' : 'outline'}>
                             {getRoleLabel(user.role)}
                           </Badge>
+                          {userGroup && (
+                            <Badge variant="secondary">
+                              {userGroup.name}
+                            </Badge>
+                          )}
                           <Badge variant={user.is_approved ? 'default' : 'destructive'}>
                             {user.is_approved ? 'מאושר' : 'ממתין לאישור'}
                           </Badge>
@@ -315,31 +365,60 @@ const AdminPanel = () => {
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>עריכת תפקיד משתמש</DialogTitle>
+              <DialogTitle>עריכת תפקיד ו קבוצה</DialogTitle>
               <DialogDescription>
-                עדכן את התפקיד של {editingUser?.full_name || editingUser?.email}
+                עדכן את התפקיד והקבוצה של {editingUser?.full_name || editingUser?.email}
               </DialogDescription>
             </DialogHeader>
             
-            <div className="py-4">
-              <label className="text-sm font-medium mb-2 block">תפקיד:</label>
-              <Select value={selectedRole} onValueChange={(value: 'admin' | 'coordinator' | 'teacher') => setSelectedRole(value)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="בחר תפקיד" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">מנהל</SelectItem>
-                  <SelectItem value="coordinator">רכז פדגוגי</SelectItem>
-                  <SelectItem value="teacher">מורה</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="py-4 space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">תפקיד:</label>
+                <Select value={selectedRole} onValueChange={(value: 'admin' | 'coordinator' | 'teacher' | 'instructor' | 'group_coordinator') => setSelectedRole(value)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="בחר תפקיד" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">מנהל</SelectItem>
+                    <SelectItem value="coordinator">רכז פדגוגי</SelectItem>
+                    <SelectItem value="group_coordinator">רכז קבוצה</SelectItem>
+                    <SelectItem value="teacher">מורה</SelectItem>
+                    <SelectItem value="instructor">מדריך</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {needsGroupSelection && (
+                <div>
+                  <label className="text-sm font-medium mb-2 block">קבוצה:</label>
+                  <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="בחר קבוצה" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {groups.map((group) => (
+                        <SelectItem key={group.id} value={group.id}>
+                          {group.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {selectedRole === 'instructor' ? 'מדריכים רואים רק את הנתונים של הקבוצה שלהם' : 
+                     'רכזי קבוצה מנהלים רק את הקבוצה שלהם'}
+                  </p>
+                </div>
+              )}
             </div>
 
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                 ביטול
               </Button>
-              <Button onClick={updateUserRole}>
+              <Button 
+                onClick={updateUserRole}
+                disabled={needsGroupSelection && !selectedGroupId}
+              >
                 שמור שינויים
               </Button>
             </DialogFooter>

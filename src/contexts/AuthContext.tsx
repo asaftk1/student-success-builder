@@ -1,13 +1,21 @@
+
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+
+interface Group {
+  id: string;
+  name: string;
+  description?: string;
+}
 
 interface Profile {
   id: string;
   email: string;
   full_name?: string;
-  role: 'admin' | 'coordinator' | 'teacher';
+  role: 'admin' | 'coordinator' | 'teacher' | 'instructor' | 'group_coordinator';
   is_approved: boolean;
+  group_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -15,6 +23,7 @@ interface Profile {
 interface AuthContextType {
   user: User | null;
   profile: Profile | null;
+  userGroup: Group | null;
   session: Session | null;
   loading: boolean;
   signUp: (email: string, password: string, fullName: string, role: string) => Promise<{ error: any }>;
@@ -36,8 +45,31 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [userGroup, setUserGroup] = useState<Group | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const fetchUserProfile = async (userId: string) => {
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select(`
+        *,
+        groups (
+          id,
+          name,
+          description
+        )
+      `)
+      .eq('id', userId)
+      .single();
+    
+    if (profileData) {
+      setProfile(profileData as Profile);
+      if (profileData.groups) {
+        setUserGroup(profileData.groups as Group);
+      }
+    }
+  };
 
   useEffect(() => {
     // Set up auth state listener
@@ -49,17 +81,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (session?.user) {
           // Fetch user profile
           setTimeout(async () => {
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-            if (profileData) {
-              setProfile(profileData as Profile);
-            }
+            await fetchUserProfile(session.user.id);
           }, 0);
         } else {
           setProfile(null);
+          setUserGroup(null);
         }
         setLoading(false);
       }
@@ -70,17 +96,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single()
-          .then(({ data: profileData }) => {
-            if (profileData) {
-              setProfile(profileData as Profile);
-            }
-            setLoading(false);
-          });
+        fetchUserProfile(session.user.id).then(() => {
+          setLoading(false);
+        });
       } else {
         setLoading(false);
       }
@@ -123,6 +141,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const value = {
     user,
     profile,
+    userGroup,
     session,
     loading,
     signUp,
