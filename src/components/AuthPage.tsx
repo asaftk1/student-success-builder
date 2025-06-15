@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GraduationCap, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,7 +21,6 @@ const AuthPage = () => {
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [role, setRole] = useState('');
   
   const [loading, setLoading] = useState(false);
 
@@ -49,7 +47,7 @@ const AuthPage = () => {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await signUp(signupEmail, signupPassword, fullName, role);
+    const { error } = await signUp(signupEmail, signupPassword, fullName);
     
     if (error) {
       toast({
@@ -66,7 +64,6 @@ const AuthPage = () => {
       setSignupEmail('');
       setSignupPassword('');
       setFullName('');
-      setRole('');
     }
     
     setLoading(false);
@@ -157,23 +154,10 @@ const AuthPage = () => {
                     minLength={6}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-role">תפקיד</Label>
-                  <Select value={role} onValueChange={setRole} required>
-                    <SelectTrigger>
-                      <SelectValue placeholder=" תפקיד" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="teacher">מורה</SelectItem>
-                      <SelectItem value="coordinator">רכז פדגוגי</SelectItem>
-                      <SelectItem value="admin">מנהל</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-start space-x-2">
                   <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
                   <div className="text-sm text-yellow-800">
-                    <strong>שים לב:</strong> לאחר ההרשמה תצטרך לחכות לאישור מנהל המערכת כדי לגשת לפרופיל.
+                    <strong>שים לב:</strong> לאחר ההרשמה תצטרך לחכות לאישור מנהל המערכת כדי לגשת לפרופיל. המנהל יקבע את התפקיד שלך במערכת.
                   </div>
                 </div>
                 <Button type="submit" className="w-full bg-green-600 hover:bg-green-700" disabled={loading}>
