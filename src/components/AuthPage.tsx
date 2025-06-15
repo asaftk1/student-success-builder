@@ -70,97 +70,102 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-xl">
-        <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
-            <GraduationCap className="w-6 h-6 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-2 sm:p-4">
+      <Card className="w-full max-w-sm sm:max-w-md shadow-xl mx-2">
+        <CardHeader className="text-center space-y-2 sm:space-y-4 p-4 sm:p-6">
+          <div className="mx-auto w-10 h-10 sm:w-12 sm:h-12 bg-blue-600 rounded-full flex items-center justify-center">
+            <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold text-gray-900">מערכת בית ספר</CardTitle>
-            <CardDescription className="text-gray-600">התחבר או הירשם למערכת ניהול בית הספר</CardDescription>
+            <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">מערכת בית ספר</CardTitle>
+            <CardDescription className="text-sm sm:text-base text-gray-600">התחבר או הירשם למערכת ניהול בית הספר</CardDescription>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6">
           <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">התחברות</TabsTrigger>
-              <TabsTrigger value="signup">הרשמה</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="login" className="text-sm">התחברות</TabsTrigger>
+              <TabsTrigger value="signup" className="text-sm">הרשמה</TabsTrigger>
             </TabsList>
             
             <TabsContent value="login">
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="login-email">אימייל</Label>
+              <form onSubmit={handleLogin} className="space-y-3 sm:space-y-4">
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="login-email" className="text-sm">אימייל</Label>
                   <Input
                     id="login-email"
                     type="email"
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
-                    placeholder=" אימייל"
+                    placeholder="אימייל"
                     required
+                    className="text-sm"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="login-password">סיסמה</Label>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="login-password" className="text-sm">סיסמה</Label>
                   <Input
                     id="login-password"
                     type="password"
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
-                    placeholder=" סיסמה"
+                    placeholder="סיסמה"
                     required
+                    className="text-sm"
                   />
                 </div>
-                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading}>
+                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-sm sm:text-base" disabled={loading}>
                   {loading ? 'מתחבר...' : 'התחבר'}
                 </Button>
               </form>
             </TabsContent>
             
             <TabsContent value="signup">
-              <form onSubmit={handleSignup} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-name">שם מלא</Label>
+              <form onSubmit={handleSignup} className="space-y-3 sm:space-y-4">
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="signup-name" className="text-sm">שם מלא</Label>
                   <Input
                     id="signup-name"
                     type="text"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder=" שם מלא"
+                    placeholder="שם מלא"
                     required
+                    className="text-sm"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">אימייל</Label>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="signup-email" className="text-sm">אימייל</Label>
                   <Input
                     id="signup-email"
                     type="email"
                     value={signupEmail}
                     onChange={(e) => setSignupEmail(e.target.value)}
-                    placeholder=" אימייל"
+                    placeholder="אימייל"
                     required
+                    className="text-sm"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">סיסמה</Label>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="signup-password" className="text-sm">סיסמה</Label>
                   <Input
                     id="signup-password"
                     type="password"
                     value={signupPassword}
                     onChange={(e) => setSignupPassword(e.target.value)}
-                    placeholder=" סיסמה (לפחות 6 תווים)"
+                    placeholder="סיסמה (לפחות 6 תווים)"
                     required
                     minLength={6}
+                    className="text-sm"
                   />
                 </div>
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-start space-x-2">
-                  <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                  <div className="text-sm text-yellow-800">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2 sm:p-3 flex items-start space-x-2">
+                  <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-xs sm:text-sm text-yellow-800">
                     <strong>שים לב:</strong> לאחר ההרשמה תצטרך לחכות לאישור מנהל המערכת כדי לגשת לפרופיל. המנהל יקבע את התפקיד שלך במערכת.
                   </div>
                 </div>
-                <Button type="submit" className="w-full bg-green-600 hover:bg-green-700" disabled={loading}>
+                <Button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-sm sm:text-base" disabled={loading}>
                   {loading ? 'נרשם...' : 'הירשם'}
                 </Button>
               </form>
